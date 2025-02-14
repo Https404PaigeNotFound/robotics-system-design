@@ -121,7 +121,28 @@ echo 'export ROS_DOMAIN_ID=30' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-### Launching ROS 2 Nodes
+### Sourcing the ROS 2 Workspace on the NUC
+Before launching nodes or sending commands, ensure your ROS 2 workspace is sourced on the NUC. *The Leo Rover's Pi does this already when it turns on, it also runs auto runs nodes as well.*
+```sh
+source ~/ros_ws/install/setup.bash
+```
+To avoid doing this manually every time, add it to your `~/.bashrc:`
+```sh
+echo "source ~/ros_ws/install/setup.bash" >> ~/.bashrc
+source ~/.bashrc
+```
+
+### Sending commands from the NUC to the Pi
+Theoretically you should be able to see all active nodes running on both the NUC and Pi from the NUC
+```sh
+ros2 topic list
+```
+Also from the NUC you should be able to send commands
+```sh
+ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 1.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}"
+```
+
+### Launching ROS 2 Nodes (Test if it works)
 On the Raspberry Pi:
 ```sh
 ros2 launch rover_bringup rover.launch.py
