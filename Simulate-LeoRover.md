@@ -160,6 +160,7 @@ source venv/bin/activate
 ### **Source ROS 2 and Workspace Setup Scripts**
 ```bash
 source /opt/ros/humble/setup.bash
+source /opt/ros/humble/setup.bash
 source ~/leo_rover_simulation/ros2_ws/install/setup.bash
 ```
 
@@ -182,10 +183,10 @@ echo "export LIBGL_ALWAYS_SOFTWARE=1" >> ~/.bashrc
 source ~/.bashrc
 ```
 
-### **2. FastRTPS Shared Memory Error**
+### **FastRTPS Shared Memory Error**
 Check if multiple instances of Gazebo, RViz or ROS2 are running, if so close them.
 
-### **3. Incorrect `/run/user/1000/` Permissions**
+### **Incorrect `/run/user/1000/` Permissions**
 ```bash
 chmod 0700 /run/user/1000
 ```
@@ -202,12 +203,10 @@ git push origin main
 ```
 
 ---
-## **Overview**
-This guide walks you through setting up a **Leo Rover simulation environment** using **ROS 2 Humble**, **Gazebo**, and **RViz** on **Ubuntu 22.04**. By the end of this tutorial, you will have a functional simulation of the Leo Rover to test and develop autonomous robotics applications.
 
-Having a dedicated repository for the simulation environment is particularly useful because, when using the Leo Rover physically, ROS 2 nodes are typically distributed between the **Raspberry Pi** onboard the rover and an **Intel NUC** for additional processing. A simulation environment allows for development and testing of code without requiring physical access to the robot, making it easier to iterate on algorithms, debug issues, and refine autonomy features before deploying them to the real hardware.
 
----
+> [!CAUTION]
+> Guidance below this point is still in development.
 
 ## **Creating a Simple GUI Controller for the Leo Rover Simulation**
 
@@ -216,7 +215,7 @@ A **Graphical User Interface (GUI) controller** can be useful for manually drivi
 ### **Create a New ROS 2 Package**
 Navigate to your ROS 2 workspace and create a new package for the GUI controller:
 ```bash
-cd ~/leo_rover_project/ros2_ws/src
+cd ~/leo_rover_simulation/ros2_ws/src
 ros2 pkg create --build-type ament_python gui_controller_leo
 ```
 
@@ -230,7 +229,7 @@ sudo apt install python3-tk
 ### **Create the GUI Node**
 Navigate to your package directory:
 ```bash
-cd ~/leo_rover_project/ros2_ws/src/gui_controller_leo
+cd ~/leo_rover_simulation/ros2_ws/src/gui_controller_leo
 ```
 Create a `gui_controller.py` file inside `gui_controller_leo/`:
 ```bash
@@ -244,47 +243,54 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 import tkinter as tk
+import threading
 
 class GUIController(Node):
     def __init__(self):
         super().__init__('leo_rover_gui_controller')
         self.publisher_ = self.create_publisher(Twist, '/cmd_vel', 10)
         self.twist = Twist()
+        
+        # Start ROS spin in a background thread
+        self.ros_thread = threading.Thread(target=rclpy.spin, args=(self,))
+        self.ros_thread.start()
+        
+        # Start the GUI in the main thread
         self.create_gui()
-    
+
     def create_gui(self):
-        root = tk.Tk()
-        root.title("Leo Rover Controller")
-        root.geometry("300x200")
-        
-        tk.Button(root, text="Forward", command=self.move_forward).pack()
-        tk.Button(root, text="Backward", command=self.move_backward).pack()
-        tk.Button(root, text="Left", command=self.turn_left).pack()
-        tk.Button(root, text="Right", command=self.turn_right).pack()
-        tk.Button(root, text="Stop", command=self.stop).pack()
-        
-        root.mainloop()
-    
+        self.root = tk.Tk()
+        self.root.title("Leo Rover Controller")
+        self.root.geometry("300x200")
+
+        tk.Button(self.root, text="Forward", command=self.move_forward).pack()
+        tk.Button(self.root, text="Backward", command=self.move_backward).pack()
+        tk.Button(self.root, text="Left", command=self.turn_left).pack()
+        tk.Button(self.root, text="Right", command=self.turn_right).pack()
+        tk.Button(self.root, text="Stop", command=self.stop).pack()
+
+        self.root.mainloop()  # Keep Tkinter running in the main thread
+
     def move_forward(self):
         self.twist.linear.x = 0.5
         self.twist.angular.z = 0.0
         self.publisher_.publish(self.twist)
-    
+
     def move_backward(self):
         self.twist.linear.x = -0.5
         self.twist.angular.z = 0.0
         self.publisher_.publish(self.twist)
-    
+
     def turn_left(self):
         self.twist.linear.x = 0.0
         self.twist.angular.z = 1.0
         self.publisher_.publish(self.twist)
-    
+
     def turn_right(self):
         self.twist.linear.x = 0.0
         self.twist.angular.z = -1.0
         self.publisher_.publish(self.twist)
-    
+
     def stop(self):
         self.twist.linear.x = 0.0
         self.twist.angular.z = 0.0
@@ -293,12 +299,80 @@ class GUIController(Node):
 def main():
     rclpy.init()
     gui_controller = GUIController()
-    rclpy.spin(gui_controller)
+
+    # Keep the GUI running in the main thread
+    gui_controller.root.mainloop()
+
+    # Cleanup when GUI is closed
     gui_controller.destroy_node()
     rclpy.shutdown()
 
 if __name__ == "__main__":
     main()
+```
+Save the file.
+
+### **Create a `launch/` Directory and Launch file**
+Navigate to your package and create a `launch` folder if it doesn't exist:
+```
+cd ~/leo_rover_simulation/ros2_ws/src/gui_controller_leo
+mkdir -p launch
+```
+Inside `launch/`, create a Python launch file, e.g., `gui_controller_launch.py`:
+```
+touch launch/gui_controller_launch.py
+```
+Make sure the file is executable:
+```
+chmod +x launch/gui_controller_launch.py
+```
+Edit `gui_controller_launch.py` and add the following code:
+```python
+import os
+from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_ros.actions import Node
+
+
+
+def generate_launch_description():
+    # Get package directories
+    pkg_leo_simulator = get_package_share_directory("leo_simulator")
+
+    # Include the existing Leo Rover simulation launch file
+    leo_simulation = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(pkg_leo_simulator, "leo_gz_bringup", "launch", "leo_gz.launch.py"))
+    )
+    #leo_simulation = IncludeLaunchDescription(
+    #    PythonLaunchDescriptionSource(os.path.join(pkg_leo_gz_bringup, "launch", "leo_gz.launch.py"))
+    #)
+
+    """ 
+    # Launch RViz
+    rviz_config_path = os.path.join(pkg_leo_simulator, "rviz", "default.rviz")
+    rviz_node = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz2",
+        arguments=["-d", rviz_config_path],
+        output="screen",
+    )
+    """
+    # Launch the GUI controller
+    gui_controller = Node(
+        package="gui_controller_leo",
+        executable="gui_controller",
+        name="gui_controller",
+        output="screen",
+    )
+
+    return LaunchDescription([
+        leo_simulation,  # Starts Gazebo with the Leo Rover
+        #rviz_node,       # Starts RViz for visualisation
+        gui_controller,  # Starts GUI for manual control
+    ])
 ```
 Save the file.
 
@@ -311,25 +385,43 @@ Edit `setup.py` in `gui_controller_leo/` and modify `entry_points`:
         ],
     },
 ```
+Also modify `data_files`
+```python
+data_files=[
+    ('share/ament_index/resource_index/packages', ['resource/gui_controller_leo']),
+    ('share/gui_controller_leo', ['package.xml']),
+    ('share/gui_controller_leo/launch', ['launch/gui_controller_launch.py']),
+],
+```
 Save the file.
 
-### **Build and Source the Package**
+### **Build the `gui_controller_leo` Package**
 ```bash
-cd ~/leo_rover_project/ros2_ws
+cd ~/leo_rover_simulation/ros2_ws
 colcon build --packages-select gui_controller_leo
+source install/setup.bash
+```
+
+### **(optional) Clean workspace, ensure all dependencies are installed, and rebuild the workspace**
+```bash
+cd ~/leo_rover_simulation/ros2_ws
+rosdep update
+rosdep install --from-paths src --ignore-src -r -y
+cd ~/leo_rover_simulation/ros2_ws
+rm -rf build/ install/ log/
+colcon build
 source install/setup.bash
 ```
 
 ### **Update `requirements.txt` (Best Practice)**
 After installing dependencies, update `requirements.txt` to reflect the latest package versions:
 ```bash
-pip freeze > ~/leo_rover_project/requirements.txt
+pip freeze > ~/leo_rover_simulation/requirements.txt
 ```
 
-### **Step 7: Run the GUI Controller**
-Launch the GUI controller to drive the rover:
+### **Run the Launch File**
 ```bash
-ros2 run gui_controller_leo gui_controller
+ros2 launch gui_controller_leo gui_controller_launch.py
 ```
 
 ### **Best Practices for ROS 2 Python Code**
