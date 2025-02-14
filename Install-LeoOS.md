@@ -119,9 +119,9 @@ ros2 topic echo /joint_states
 ros2 topic echo /firmware/imu
 ```
 ### Send movement command (place robot on the ground first!):
-*To ensure continous movement use  `--rate` which publishes the command at a given frequence. If you'd to send one move command replace `--rate` with `--once`*
+*To ensure continous movement use  `--rate 10` which publishes the command at a given frequence, in this example 10Hz. You can send one move command by replacing `--rate 10` with `--once`*
 ```sh
-ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}"
+ros2 topic pub --rate 10 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}"
 ```
 ### Send stop moving command:
 ```sh
