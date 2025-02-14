@@ -118,7 +118,8 @@ _If you encounter errors, try cleaning the workspace and rebuilding:_
 rm -rf build/ install/ log/
 colcon build --symlink-install
 ```
-*The `--symlink-install` flag allows for faster development cycles by avoiding the need to rebuild the workspace after every change. If issues with building the workspace occur then remove the `--symlink-install` flag.*
+_The `--symlink-install` flag allows for faster development cycles by avoiding the need to rebuild the workspace after every change. If issues with building the workspace occur then remove the `--symlink-install` flag._
+
 ---
 
 ## **Source the Workspace**
