@@ -1,6 +1,6 @@
 # Integrating an Intel NUC with Leo Rover
 
-This guide expands on the **LeoOS and ROS 2 setup** by integrating an **Intel NUC** with the **Leo Rover's Raspberry Pi**. This enhances computational capabilities, enables efficient processing distribution, and optimizes performance by running resource-intensive tasks on the NUC.
+This guide expands on the **LeoOS and ROS 2 setup** by integrating an **Intel NUC** with the **Leo Rover's Raspberry Pi**. This enhances computational capabilities, enables efficient processing distribution, and optimises performance by running resource-intensive tasks on the NUC. To facilitate node discovery through the Data Distribution Service (DDS) in ROS 2, a connection between the NUC and the Raspberry Pi is essential. This connection can be established wirelessly by configuring the Raspberry Pi as a hotspot, allowing the NUC to connect to it. Alternatively, a wired connection using an Ethernet cable can physically link the Leo Rover and the NUC.
 
 ## 1. Prerequisites
 Before proceeding, ensure the following:
@@ -18,11 +18,11 @@ Before proceeding, ensure the following:
 Integrating the Intel NUC allows for **seamless communication** between both devices using **static IPs** and **ROS 2 node distribution**. This setup provides:
 - **Improved Processing Power:** Offload complex tasks (e.g., SLAM, depth sensing, and robotic arm control) to the NUC.
 - **Stable Networking:** Configure a direct, reliable network between the NUC and Raspberry Pi using static IPs.
-- **Optimized ROS 2 Performance:** Launch and manage ROS 2 nodes across both devices for coordinated execution.
+- **Optimised ROS 2 Performance:** Launch and manage ROS 2 nodes across both devices for coordinated execution.
 - **Automatic Node Discovery:** ROS 2 uses **Data Distribution Service (DDS)** to enable seamless discovery of nodes across the network without additional configuration.
 
 ## 3. Best Practices for Workspace Layout
-When organizing custom ROS 2 nodes, it's best to structure them by function. A typical ROS 2 workspace (`ros2_ws`) should look like this:
+When organising custom ROS 2 nodes, it's best to structure them by function. A typical ROS 2 workspace (`ros2_ws`) should look like this:
 ```
 ros2_ws/
  ├── src/
@@ -57,13 +57,25 @@ Processes high-load computations for mapping, depth sensing, and robotic control
 - **Interbotix Arm Node:** Controls robotic arm movements and interactions.
 
 ## 5. Setting Up Static IP Addresses
-### Configuring Static IP on Raspberry Pi:
+### Establish a connection between the NIC and Raspberry Pi
+- For wireless connection: On the NUC connect to the Raspberry Pi's hotspot
+- For wired connection: Plug in the ethernet cable between the NUC and Raspberry Pi.
+ 
+### Configuring Static IP on Raspberry Pi
+Edit the DHCP Client Configuration:
 ```sh
 sudo nano /etc/dhcpcd.conf
 ```
-Add:
+For wireless connection add:
 ```sh
 interface wlan0
+static ip_address=192.168.100.2/24
+static routers=192.168.100.1
+static domain_name_servers=192.168.100.1
+```
+For wired (ethernet) connection add:
+```sh
+interface eth0
 static ip_address=192.168.100.2/24
 static routers=192.168.100.1
 static domain_name_servers=192.168.100.1
@@ -73,7 +85,8 @@ Apply changes:
 sudo systemctl restart dhcpcd
 ```
 
-### Configuring Static IP on Intel NUC:
+### Configuring Static IP on Intel NUC
+Access Network Settings:
 ```sh
 sudo nmtui
 ```
@@ -81,9 +94,19 @@ Set:
 - **IPv4 Address:** `192.168.100.3/24`
 - **Gateway:** `192.168.100.1`
 - **DNS Server:** `192.168.100.1`
-Restart network:
+Restart Network Manager:
 ```sh
 sudo systemctl restart NetworkManager
+```
+
+### Test the connection from Intel NUC to Raspberry Pi:
+```sh
+ping 192.168.100.2 
+```
+
+### Test the connection from Raspberry Pi to Intel NUC:
+```sh
+ping 192.168.100.3 
 ```
 
 ## 6. Running ROS 2 Across Both Devices
@@ -162,11 +185,11 @@ ros2 launch sensor_bringup sensor.launch.py
 
 ## 8. Summary
 - **Ensure ROS 2 Humble and a workspace are set up on the NUC.**
-- **Follow best practices for workspace organization.**
+- **Follow best practices for workspace organisation.**
 - **Leverage DDS for automatic node discovery in ROS 2.**
 - **Use static IPs for stable networking.**
 - **Create a GUI on the NUC for easy control of the Leo Rover.**
 - **Launch ROS 2 nodes on both devices to distribute processing efficiently.**
 
-By following this guide, you establish a distributed ROS 2 system with enhanced usability, organization, and computational efficiency.
+By following this guide, you establish a distributed ROS 2 system with enhanced usability, organisation, and computational efficiency.
 
