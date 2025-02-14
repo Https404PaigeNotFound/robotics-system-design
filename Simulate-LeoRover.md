@@ -192,8 +192,153 @@ chmod 0700 /run/user/1000
 
 ---
 
-## **📚 Additional Resources**
-- [Leo Rover Documentation](https://docs.leorover.tech/)
-- [ROS 2 Humble Tutorials](https://docs.ros.org/en/humble/Tutorials.html)
-- [Gazebo (Ignition) Tutorials](https://gazebosim.org/docs)
+## **Commit and push your updates to Github**
+Now is a good time to commit and push your updates to GitHub. From now on the guide will not prompt you to do this but you are encouraged to backup your work using GitHub.
+```
+git commit -m "Your commit message"
+```
+```
+git push origin main
+```
+
+---
+## **Overview**
+This guide walks you through setting up a **Leo Rover simulation environment** using **ROS 2 Humble**, **Gazebo**, and **RViz** on **Ubuntu 22.04**. By the end of this tutorial, you will have a functional simulation of the Leo Rover to test and develop autonomous robotics applications.
+
+Having a dedicated repository for the simulation environment is particularly useful because, when using the Leo Rover physically, ROS 2 nodes are typically distributed between the **Raspberry Pi** onboard the rover and an **Intel NUC** for additional processing. A simulation environment allows for development and testing of code without requiring physical access to the robot, making it easier to iterate on algorithms, debug issues, and refine autonomy features before deploying them to the real hardware.
+
+---
+
+## **Creating a Simple GUI Controller for the Leo Rover Simulation**
+
+A **Graphical User Interface (GUI) controller** can be useful for manually driving the Leo Rover in simulation. This section provides step-by-step instructions for creating a simple GUI using **Tkinter (Python’s standard GUI library)** to publish velocity commands to the rover.
+
+### **Create a New ROS 2 Package**
+Navigate to your ROS 2 workspace and create a new package for the GUI controller:
+```bash
+cd ~/leo_rover_project/ros2_ws/src
+ros2 pkg create --build-type ament_python gui_controller_leo
+```
+
+This command creates a new package named `gui_controller_leo` with the **ament_python** build type, which is ideal for Python-based nodes.
+
+### **Install Tkinter (if not already installed)**
+```bash
+sudo apt install python3-tk
+```
+
+### **Create the GUI Node**
+Navigate to your package directory:
+```bash
+cd ~/leo_rover_project/ros2_ws/src/gui_controller_leo
+```
+Create a `gui_controller.py` file inside `gui_controller_leo/`:
+```bash
+touch gui_controller_leo/gui_controller.py
+chmod +x gui_controller_leo/gui_controller.py
+```
+
+Edit `gui_controller.py` and add the following code:
+```python
+import rclpy
+from rclpy.node import Node
+from geometry_msgs.msg import Twist
+import tkinter as tk
+
+class GUIController(Node):
+    def __init__(self):
+        super().__init__('leo_rover_gui_controller')
+        self.publisher_ = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.twist = Twist()
+        self.create_gui()
+    
+    def create_gui(self):
+        root = tk.Tk()
+        root.title("Leo Rover Controller")
+        root.geometry("300x200")
+        
+        tk.Button(root, text="Forward", command=self.move_forward).pack()
+        tk.Button(root, text="Backward", command=self.move_backward).pack()
+        tk.Button(root, text="Left", command=self.turn_left).pack()
+        tk.Button(root, text="Right", command=self.turn_right).pack()
+        tk.Button(root, text="Stop", command=self.stop).pack()
+        
+        root.mainloop()
+    
+    def move_forward(self):
+        self.twist.linear.x = 0.5
+        self.twist.angular.z = 0.0
+        self.publisher_.publish(self.twist)
+    
+    def move_backward(self):
+        self.twist.linear.x = -0.5
+        self.twist.angular.z = 0.0
+        self.publisher_.publish(self.twist)
+    
+    def turn_left(self):
+        self.twist.linear.x = 0.0
+        self.twist.angular.z = 1.0
+        self.publisher_.publish(self.twist)
+    
+    def turn_right(self):
+        self.twist.linear.x = 0.0
+        self.twist.angular.z = -1.0
+        self.publisher_.publish(self.twist)
+    
+    def stop(self):
+        self.twist.linear.x = 0.0
+        self.twist.angular.z = 0.0
+        self.publisher_.publish(self.twist)
+
+def main():
+    rclpy.init()
+    gui_controller = GUIController()
+    rclpy.spin(gui_controller)
+    gui_controller.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == "__main__":
+    main()
+```
+Save the file.
+
+### **Update `setup.py`**
+Edit `setup.py` in `gui_controller_leo/` and modify `entry_points`:
+```python
+    entry_points={
+        'console_scripts': [
+            'gui_controller = gui_controller_leo.gui_controller:main',
+        ],
+    },
+```
+Save the file.
+
+### **Build and Source the Package**
+```bash
+cd ~/leo_rover_project/ros2_ws
+colcon build --packages-select gui_controller_leo
+source install/setup.bash
+```
+
+### **Update `requirements.txt` (Best Practice)**
+After installing dependencies, update `requirements.txt` to reflect the latest package versions:
+```bash
+pip freeze > ~/leo_rover_project/requirements.txt
+```
+
+### **Step 7: Run the GUI Controller**
+Launch the GUI controller to drive the rover:
+```bash
+ros2 run gui_controller_leo gui_controller
+```
+
+### **Best Practices for ROS 2 Python Code**
+- Use **meaningful class and function names** to improve readability.
+- Follow **PEP8** style guidelines for Python code formatting.
+- Keep functions modular to separate **GUI logic** from **ROS 2 publishing**.
+- Ensure proper exception handling to prevent crashes.
+- Regularly update `requirements.txt` using `pip freeze` to track installed dependencies.
+
+
+
 
