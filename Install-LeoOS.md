@@ -58,7 +58,7 @@ This guide covers installing LeoOS on a Raspberry Pi, setting up remote access, 
 
 ## 6. Remote Desktop Access
 *A Remote Desktop Connection provides graphical access to the Raspberry Pi’s desktop environment from another device. It allows you to interact with the system visually, making it useful for GUI-based applications, file management, and debugging.*
-### For Windows + PuTTY Users:
+### Windows + PuTTY:
 1. Open **Remote Desktop Connection**.
 2. Enter IP: `10.0.0.1` and connect.
 3. Accept warning.
@@ -66,7 +66,7 @@ This guide covers installing LeoOS on a Raspberry Pi, setting up remote access, 
    - **Username**: `pi`
    - **Password**: `raspberry`
 
-### For Linux Users:
+### Linux:
 1. Open **Remmina**.
 2. Click **Add New Remote**.
 3. Enter:
@@ -110,13 +110,23 @@ ros2 run leo_fw update
 ```sh
 ros2 topic list
 ```
-### Check joint states:
+### Output data from topics e.g. joint states or imu:
 ```sh
 ros2 topic echo /joint_states
 ```
+
+```sh
+ros2 topic echo /firmware/imu
+```
 ### Send movement command (place robot on the ground first!):
+*To ensure continous movement use  `--rate` which publishes the command at a given frequence. If you'd to send one move command replace `--rate` with `--once`*
 ```sh
 ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}"
 ```
+### Send stop moving command:
+```sh
+ros2 topic pub --rate 10 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}"
+```
+
 Now, you can navigate using the browser interface or ROS commands!
 
