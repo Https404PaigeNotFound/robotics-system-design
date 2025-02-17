@@ -152,57 +152,138 @@ On the NUC:
 ros2 launch sensor_bringup sensor.launch.py
 ```
 
-## 7. Creating a Simple GUI for Leo Rover on NUC
+## 7. Creating a Simple GUI for Leo Rover on NUC (Optional)
+Now you can send commands from the NUC you can go about and implement whatever you like. In this step we create a very basic GUI controller for the robot for remote control (if you're using wireless connection). 
 ### Creating a ROS 2 Node for GUI Control:
-1. **Install dependencies:**
-   ```sh
-   sudo apt install python3-pyqt5 ros-humble-rqt ros-humble-rqt-gui
-   ```
-2. **Create a new ROS 2 package:**
-   ```sh
-   ros2 pkg create leo_gui --build-type ament_python --dependencies rclpy std_msgs
-   ```
-3. **Create a GUI script (`gui.py`):**
-   ```python
-   import sys
-   from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout
-   import rclpy
-   from geometry_msgs.msg import Twist
 
-   class RoverGUI(QWidget):
-       def __init__(self, node):
-           super().__init__()
-           self.node = node
-           self.publisher = node.create_publisher(Twist, '/cmd_vel', 10)
-           self.initUI()
+A **Graphical User Interface (GUI) controller** can be useful for manually driving the Leo Rover in simulation. This section provides step-by-step instructions for creating a simple GUI using **Tkinter (Python’s standard GUI library)** to publish velocity commands to the rover.
 
-       def initUI(self):
-           layout = QVBoxLayout()
-           forward_btn = QPushButton('Move Forward')
-           forward_btn.clicked.connect(self.move_forward)
-           layout.addWidget(forward_btn)
-           self.setLayout(layout)
+### **Create a New ROS 2 Package**
+Navigate to your ROS 2 workspace and create a new package for the GUI controller:
+```bash
+cd ~/ros2_ws/src
+ros2 pkg create --build-type ament_python gui_controller_leo
+```
 
-       def move_forward(self):
-           msg = Twist()
-           msg.linear.x = 0.5
-           self.publisher.publish(msg)
+This command creates a new package named `gui_controller_leo` with the **ament_python** build type, which is ideal for Python-based nodes.
 
-   def main():
-       rclpy.init()
-       node = rclpy.create_node('rover_gui')
-       app = QApplication(sys.argv)
-       ex = RoverGUI(node)
-       ex.show()
-       sys.exit(app.exec_())
+### **Install Tkinter (if not already installed)**
+```bash
+sudo apt install python3-tk
+```
 
-   if __name__ == '__main__':
-       main()
-   ```
-4. **Run the GUI:**
-   ```sh
-   ros2 run leo_gui gui.py
-   ```
+### **Create the GUI Node**
+Navigate to your package directory:
+```bash
+cd ~/ros2_ws/src/gui_controller_leo
+```
+Create a `gui_controller.py` file inside `gui_controller_leo/`:
+```bash
+touch gui_controller_leo/gui_controller.py
+chmod +x gui_controller_leo/gui_controller.py
+```
+
+Edit `gui_controller.py` and add the following code:
+```python
+import rclpy
+from rclpy.node import Node
+from geometry_msgs.msg import Twist
+import tkinter as tk
+import threading
+
+class GUIController(Node):
+    def __init__(self):
+        super().__init__('leo_rover_gui_controller')
+        self.publisher_ = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.twist = Twist()
+        
+        # Start ROS spin in a background thread
+        self.ros_thread = threading.Thread(target=rclpy.spin, args=(self,))
+        self.ros_thread.start()
+        
+        # Start the GUI in the main thread
+        self.create_gui()
+
+    def create_gui(self):
+        self.root = tk.Tk()
+        self.root.title("Leo Rover Controller")
+        self.root.geometry("300x200")
+
+        tk.Button(self.root, text="Forward", command=self.move_forward).pack()
+        tk.Button(self.root, text="Backward", command=self.move_backward).pack()
+        tk.Button(self.root, text="Left", command=self.turn_left).pack()
+        tk.Button(self.root, text="Right", command=self.turn_right).pack()
+        tk.Button(self.root, text="Stop", command=self.stop).pack()
+
+        self.root.mainloop()  # Keep Tkinter running in the main thread
+
+    def move_forward(self):
+        self.twist.linear.x = 0.5
+        self.twist.angular.z = 0.0
+        self.publisher_.publish(self.twist)
+
+    def move_backward(self):
+        self.twist.linear.x = -0.5
+        self.twist.angular.z = 0.0
+        self.publisher_.publish(self.twist)
+
+    def turn_left(self):
+        self.twist.linear.x = 0.0
+        self.twist.angular.z = 1.0
+        self.publisher_.publish(self.twist)
+
+    def turn_right(self):
+        self.twist.linear.x = 0.0
+        self.twist.angular.z = -1.0
+        self.publisher_.publish(self.twist)
+
+    def stop(self):
+        self.twist.linear.x = 0.0
+        self.twist.angular.z = 0.0
+        self.publisher_.publish(self.twist)
+
+def main():
+    rclpy.init()
+    gui_controller = GUIController()
+
+    # Keep the GUI running in the main thread
+    gui_controller.root.mainloop()
+
+    # Cleanup when GUI is closed
+    gui_controller.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == "__main__":
+    main()
+```
+Save the file.
+
+
+
+### **Build the `gui_controller_leo` Package**
+```bash
+cd ~/ros2_ws
+colcon build --packages-select gui_controller_leo
+source install/setup.bash
+```
+
+### **(if required) Clean workspace, ensure all dependencies are installed, and rebuild the workspace**
+```bash
+cd ~/ros2_ws
+rosdep update
+rosdep install --from-paths src --ignore-src -r -y
+cd ~/ros2_ws
+rm -rf build/ install/ log/
+colcon build
+source install/setup.bash
+```
+
+### Run the GUI Controller Node
+_Ensure the robot is raised so can't move or is somewhere sensible._
+ ```
+ ros2 run gui_controller_leo gui_controller
+```
+
 
 ## 8. Summary
 - **Ensure ROS 2 Humble and a workspace are set up on the NUC.**
