@@ -312,6 +312,13 @@ if __name__ == "__main__":
 ```
 Save the file.
 
+> [!NOTE]  
+> Currently this WIP is having issues with the launch files. The GUI node works therefore you can skip making the launch file and build the node, then try the following:
+> ```ros2 launch leo_gz_bringup leo_gz.launch.py```,
+> Ctrl + z,
+> ```bg```,
+> ```ros2 run gui_controller_leo gui_controller```.
+
 ### **Create a `launch/` Directory and Launch file**
 Navigate to your package and create a `launch` folder if it doesn't exist:
 ```
