@@ -111,8 +111,8 @@ ping 192.168.100.3
 
 ## 6. Running ROS 2 Across Both Devices
 ### Setting Environment Variables for ROS 2 Communication:
-On **both devices**, set the ROS 2 domain ID:
-```sh
+On **both devices**, set the ROS 2 domain ID: (If you don't set it then it's zero so don't need to set it in this application.... find out with `echo $ROS_DOMAIN_ID`
+```
 export ROS_DOMAIN_ID=30
 ```
 To make it persistent:
