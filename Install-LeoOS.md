@@ -39,7 +39,7 @@ This guide covers installing LeoOS on a Raspberry Pi, setting up remote access, 
 ### Linux:
 1. Open terminal.
 2. Run:
-   ```sh
+   ```
    ssh pi@10.0.0.1
    ```
 3. Enter **yes** and **raspberry** when prompted.
@@ -85,16 +85,14 @@ This guide covers installing LeoOS on a Raspberry Pi, setting up remote access, 
 2. Select **Activate a connection** > **UoM_Wifi**.
 3. Enter login details.
 
-### 2. System Update & Upgrade (NOTE: Documentation is conflicting is updating and upgrading can be stable on LeoOS, if causes issues, reinstall and skip this step. Please also tell Paige your experience).
+### 2. System Update & Upgrade 
 ```sh
-sudo apt update
+sudo apt update && sudo apt upgrade
 ```
-```sh
-sudo apt upgrade
-```
+
 - May prompt a confirmation at ~72%. Press `n` and `Enter`.
 
-### 3. Update Firmware (NOTE: May not be relevant to ROS2 LeoOS - if you know the answer to this tell Paige so they can update the page)
+### 3. Update Firmware 
 ```sh
 ros2 run leo_fw update
 ```
